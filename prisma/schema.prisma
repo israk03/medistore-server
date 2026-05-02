@@ -7,10 +7,145 @@ datasource db {
   provider = "postgresql"
 }
 
+// ENUMS
+
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PLACED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+
+// MODELS
+
 model User {
-    id        String   @id @default(uuid())
-    email     String   @unique
-    name      String?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       Role     @default(CUSTOMER)
+  isBanned   Boolean  @default(false)
+
+  phone      String?
+  avatarUrl  String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  medicines  Medicine[]
+  orders     Order[]
+  reviews    Review[]
+
+  @@map("users")
+}
+
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+
+  medicines Medicine[]
+
+  @@map("categories")
+}
+
+
+model Medicine {
+  id           String   @id @default(uuid())
+  name         String
+  description  String
+  price        Decimal
+  stock        Int      @default(0)
+  isActive     Boolean  @default(true)
+
+  imageUrl     String?
+  manufacturer String
+
+  sellerId     String
+  categoryId   String
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  seller     User        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+  reviews    Review[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@map("medicines")
+}
+
+
+model Order {
+  id              String        @id @default(uuid())
+  customerId      String
+  status          OrderStatus   @default(PLACED)
+
+  totalAmount     Decimal
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   String?
+
+  shippingAddress Json
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  customer   User        @relation(fields: [customerId], references: [id])
+  orderItems OrderItem[]
+
+  @@index([customerId])
+  @@map("orders")
+}
+
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  medicineId String
+
+  quantity   Int
+  unitPrice  Decimal
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  medicine Medicine @relation(fields: [medicineId], references: [id])
+
+  @@index([orderId])
+  @@index([medicineId])
+  @@map("order_items")
+}
+
+
+model Review {
+  id         String   @id @default(uuid())
+  customerId String
+  medicineId String
+
+  rating     Int
+  comment    String?
+
+  createdAt  DateTime @default(now())
+
+  customer User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  medicine Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, medicineId]) 
+  @@index([medicineId])
+  @@map("reviews")
 }
