@@ -6,6 +6,7 @@ import { MedicineRoutes } from './modules/Medicine/medicine.route';
 import { OrderRoutes } from './modules/Order/order.route';
 import { SellerRoutes } from './modules/Seller/seller.route';
 import { AdminRoutes } from './modules/Admin/admin.route';
+import { ReviewsRoutes } from './modules/Reviews/reviews.route';
 
 const app: Application = express();
 
@@ -23,6 +24,7 @@ app.use('/api/medicines', MedicineRoutes);
 app.use('/api/orders', OrderRoutes);
 app.use('/api/seller', SellerRoutes);
 app.use('/api/admin', AdminRoutes);
+app.use('/api/reviews', ReviewsRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('MediStore server is running!');
