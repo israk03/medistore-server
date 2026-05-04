@@ -88,6 +88,7 @@ model Medicine {
   reviews    Review[]
 
   @@index([sellerId])
+  @@unique([name, sellerId])
   @@index([categoryId])
   @@map("medicines")
 }
