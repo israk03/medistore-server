@@ -346,6 +346,10 @@ async function main() {
       sellerId: seller.id,
     },
   });
+
+  console.log('Seeding medicine:', med.name);
+console.log('Category:', med.category);
+console.log('CategoryId:', categories[med.category]);
 }
 
   console.log('🎉 Seeding complete!');
