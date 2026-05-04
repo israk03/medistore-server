@@ -4,6 +4,7 @@ import { AuthRoutes } from './modules/Auth/auth.route';
 import { CategoryRoutes } from './modules/Category/category.route';
 import { MedicineRoutes } from './modules/Medicine/medicine.route';
 import { OrderRoutes } from './modules/Order/order.route';
+import { SellerRoutes } from './modules/Seller/seller.route';
 
 const app: Application = express();
 
@@ -19,6 +20,7 @@ app.use('/api/auth', AuthRoutes);
 app.use('/api/categories', CategoryRoutes);
 app.use('/api/medicines', MedicineRoutes);
 app.use('/api/orders', OrderRoutes);
+app.use('/api/seller', SellerRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('MediStore server is running!');
