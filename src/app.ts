@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import { AuthRoutes } from './modules/Auth/auth.route';
+import { CategoryRoutes } from './modules/Category/category.route';
 
 const app: Application = express();
 
@@ -13,6 +14,7 @@ app.use(cors());
 
 // Routes
 app.use('/api/auth', AuthRoutes);
+app.use('/api/categories', CategoryRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('MediStore server is running!');
