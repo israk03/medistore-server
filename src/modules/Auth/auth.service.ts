@@ -132,6 +132,13 @@ export const loginUser = async (input: LoginInput) => {
     throw new AppError('Your account has been banned. Contact support.', 403);
   }
 
+   if (!user.password || user.password === "") {
+  throw new AppError(
+    'This account was created with Google. Please use Google Sign In.',
+    400
+  );
+}
+
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
