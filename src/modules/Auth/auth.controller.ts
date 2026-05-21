@@ -152,3 +152,43 @@ export const getMe = async (
     next(err);
   }
 };
+
+// ── UPDATE PROFILE ───────────────────────────────────────────────────────
+export const updateProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Check authentication
+    if (!req.user) {
+      return next(new AppError('Unauthorized', 401));
+    }
+
+    const { name, email } = req.body;
+
+    // At least one field required
+    if (!name && !email) {
+      return next(
+        new AppError('name or email is required', 400)
+      );
+    }
+
+    const updatedUser = await AuthService.updateProfile(
+      req.user.id,
+      {
+        name,
+        email,
+      }
+    );
+
+    sendResponse(
+      res,
+      200,
+      'Profile updated successfully',
+      updatedUser
+    );
+  } catch (err) {
+    next(err);
+  }
+};

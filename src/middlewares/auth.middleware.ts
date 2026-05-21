@@ -4,6 +4,7 @@ import { config } from '../config/env';
 import { AuthPayload } from '../types/express';
 import { AppError } from '../utils/AppError';
 import { prisma } from '../prisma/client';
+import { Role } from '@prisma/client';
 
 export const authenticate = async (
   req: Request,
@@ -62,9 +63,12 @@ export const authenticate = async (
 
 export const authorize = (...roles: AuthPayload['role'][]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role as Role)) {
       return next(new AppError('Forbidden: insufficient permissions', 403));
     }
+
+
+    
     next();
   };
 };

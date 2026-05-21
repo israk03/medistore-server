@@ -178,3 +178,51 @@ export const getCurrentUser = async (userId: string) => {
   return user;
 };
 
+// updateProfile
+export const updateProfile = async (
+  userId: string,
+  input: { name?: string; email?: string }
+) => {
+  const { name, email } = input;
+
+  // Find existing user
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existingUser) {
+    throw new AppError('User not found', 404);
+  }
+
+  let normalizedEmail = existingUser.email;
+
+  // Normalize & validate email if updating
+  if (email) {
+    normalizedEmail = email.toLowerCase();
+
+    // Check if another user already uses this email
+    const emailExists = await prisma.user.findFirst({
+      where: {
+        email: normalizedEmail,
+        NOT: {
+          id: userId,
+        },
+      },
+    });
+
+    if (emailExists) {
+      throw new AppError('Email already in use', 409);
+    }
+  }
+
+  // Update user
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      name: name ?? existingUser.name,
+      email: normalizedEmail,
+    },
+  });
+
+  return sanitizeUser(updatedUser);
+};

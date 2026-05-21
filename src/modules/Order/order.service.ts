@@ -1,7 +1,7 @@
+// src/modules/Order/order.service.ts
 import { prisma } from '../../prisma/client';
 import { AppError } from '../../utils/AppError';
 
-// TYPES
 interface OrderItemInput {
   medicineId: string;
   quantity: number;
@@ -13,7 +13,6 @@ interface CreateOrderInput {
   items: OrderItemInput[];
 }
 
-// SHARED INCLUDE
 const orderInclude = {
   orderItems: {
     include: {
@@ -54,14 +53,12 @@ export const createOrder = async (input: CreateOrderInput) => {
 
   for (const item of items) {
     const medicine = medicineMap.get(item.medicineId)!;
-
     if (item.quantity <= 0) {
       throw new AppError(`Invalid quantity for ${medicine.name}`, 400);
     }
-
     if (medicine.stock < item.quantity) {
       throw new AppError(
-        `Insufficient stock for "${medicine.name}"`,
+        `Insufficient stock for "${medicine.name}". Available: ${medicine.stock}`,
         400
       );
     }
@@ -72,35 +69,40 @@ export const createOrder = async (input: CreateOrderInput) => {
     return sum + Number(medicine.price) * item.quantity;
   }, 0);
 
-  const order = await prisma.$transaction(async (tx) => {
-    const newOrder = await tx.order.create({
-      data: {
-        customerId,
-        shippingAddress,
-        totalAmount,
-        status: 'PLACED',
-        orderItems: {
-          create: items.map((item) => ({
-            medicineId: item.medicineId,
-            quantity: item.quantity,
-            unitPrice: medicineMap.get(item.medicineId)!.price,
-          })),
-        },
-      },
-      include: orderInclude,
-    });
-
-    for (const item of items) {
-      await tx.medicine.update({
-        where: { id: item.medicineId },
+  const order = await prisma.$transaction(
+    async (tx) => {
+      const newOrder = await tx.order.create({
         data: {
-          stock: { decrement: item.quantity },
+          customerId,
+          shippingAddress,
+          totalAmount,
+          status: 'PLACED',
+          orderItems: {
+            create: items.map((item) => ({
+              medicineId: item.medicineId,
+              quantity: item.quantity,
+              unitPrice: medicineMap.get(item.medicineId)!.price,
+            })),
+          },
         },
+        include: orderInclude,
       });
-    }
 
-    return newOrder;
-  });
+      await Promise.all(
+        items.map((item) =>
+          tx.medicine.update({
+            where: { id: item.medicineId },
+            data: { stock: { decrement: item.quantity } },
+          })
+        )
+      );
+
+      return newOrder;
+    },
+    {
+      timeout: 15000,
+    }
+  );
 
   return order;
 };
@@ -138,31 +140,31 @@ export const cancelOrder = async (orderId: string, customerId: string) => {
   });
 
   if (!order) throw new AppError('Order not found', 404);
-
-  if (order.customerId !== customerId) {
-    throw new AppError('Forbidden', 403);
-  }
-
+  if (order.customerId !== customerId) throw new AppError('Forbidden', 403);
   if (order.status !== 'PLACED') {
     throw new AppError('Only PLACED orders can be cancelled', 400);
   }
 
-  return prisma.$transaction(async (tx) => {
-    const cancelled = await tx.order.update({
-      where: { id: orderId },
-      data: { status: 'CANCELLED' },
-      include: orderInclude,
-    });
-
-    for (const item of order.orderItems) {
-      await tx.medicine.update({
-        where: { id: item.medicineId },
-        data: {
-          stock: { increment: item.quantity },
-        },
+  return prisma.$transaction(
+    async (tx) => {
+      const cancelled = await tx.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELLED' },
+        include: orderInclude,
       });
-    }
 
-    return cancelled;
-  });
+
+      await Promise.all(
+        order.orderItems.map((item) =>
+          tx.medicine.update({
+            where: { id: item.medicineId },
+            data: { stock: { increment: item.quantity } },
+          })
+        )
+      );
+
+      return cancelled;
+    },
+    { timeout: 15000 }
+  );
 };

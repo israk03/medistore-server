@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import { AuthRoutes } from './modules/Auth/auth.route';
 import { CategoryRoutes } from './modules/Category/category.route';
@@ -28,6 +28,28 @@ app.use('/api/reviews', ReviewsRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('MediStore server is running!');
+});
+
+// ── 404 handler for unknown routes ────────────────────────────────────────
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    statusCode: 404,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
+// ── Global error handler ──────────────────────────────────────────────────
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'Internal server error';
+
+  res.status(statusCode).json({
+    success: false,
+    statusCode,
+    message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
 });
 
 export default app;
