@@ -7,12 +7,21 @@ import { OrderRoutes } from './modules/Order/order.route';
 import { SellerRoutes } from './modules/Seller/seller.route';
 import { AdminRoutes } from './modules/Admin/admin.route';
 import { ReviewsRoutes } from './modules/Reviews/reviews.route';
+import { config } from './config/env';
 
 const app: Application = express();
 
 // parsers
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      config.clientUrl,
+    ],
+    credentials: true,
+  })
+);
 
 // application routes
 // app.use('/api/v1', router);

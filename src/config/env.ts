@@ -12,6 +12,7 @@ export const config = Object.freeze({
   port: Number.isNaN(port) ? 5000 : port,
   jwtSecret: requiredEnv('JWT_SECRET'),
   databaseUrl: requiredEnv('DATABASE_URL'),
+  clientUrl: requiredEnv("CLIENT_URL"),
   nodeEnv:
     (process.env.NODE_ENV as 'development' | 'production' | 'test') ||
     'development',
